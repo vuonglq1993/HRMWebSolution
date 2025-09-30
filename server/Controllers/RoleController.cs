@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using server.Models; // namespace chứa DbContext + Entities
 
-namespace server.Controllers;
-
+namespace server.Controllers
+{
 
     [Route("api/[controller]")]
     [ApiController]
@@ -93,3 +93,4 @@ namespace server.Controllers;
             return NoContent();
         }
     }
+}

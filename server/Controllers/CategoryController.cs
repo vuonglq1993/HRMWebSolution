@@ -2,61 +2,60 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using server.Models; // namespace chứa DbContext + Entities
 
-namespace server.Controllers;
-
-
+namespace server.Controllers
+{
     [Route("api/[controller]")]
     [ApiController]
-    public class RoleController : ControllerBase
+    public class CategoryController : ControllerBase
     {
         private readonly HrmwebContext _context;
 
-        public RoleController(HrmwebContext context)
+        public CategoryController(HrmwebContext context)
         {
             _context = context;
         }
 
-        // GET: api/role
+        // GET: api/Category
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Role>>> GetRoles()
+        public async Task<ActionResult<IEnumerable<Category>>> GetCategorys()
         {
-            return await _context.Roles.ToListAsync();
+            return await _context.Categorys.ToListAsync();
         }
 
-        // GET: api/role/5
+        // GET: api/Category/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Role>> GetRole(int id)
+        public async Task<ActionResult<Category>> GetCategory(int id)
         {
-            var role = await _context.Roles.FindAsync(id);
+            var Category = await _context.Categorys.FindAsync(id);
 
-            if (role == null)
+            if (Category == null)
             {
                 return NotFound();
             }
 
-            return role;
+            return Category;
         }
 
-        // POST: api/role
+        // POST: api/Category
         [HttpPost]
-        public async Task<ActionResult<Role>> PostRole(Role role)
+        public async Task<ActionResult<Category>> PostCategory(Category Category)
         {
-            _context.Roles.Add(role);
+            _context.Categorys.Add(Category);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetRole), new { id = role.Id }, role);
+            return CreatedAtAction(nameof(GetCategory), new { id = Category.Id }, Category);
         }
 
-        // PUT: api/role/5
+        // PUT: api/Category/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutRole(int id, Role role)
+        public async Task<IActionResult> PutCategory(int id, Category Category)
         {
-            if (id != role.Id)
+            if (id != Category.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(role).State = EntityState.Modified;
+            _context.Entry(Category).State = EntityState.Modified;
 
             try
             {
@@ -64,7 +63,7 @@ namespace server.Controllers;
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Roles.Any(e => e.Id == id))
+                if (!_context.Categorys.Any(e => e.Id == id))
                 {
                     return NotFound();
                 }
@@ -77,19 +76,20 @@ namespace server.Controllers;
             return NoContent();
         }
 
-        // DELETE: api/role/5
+        // DELETE: api/Category/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteRole(int id)
+        public async Task<IActionResult> DeleteCategory(int id)
         {
-            var role = await _context.Roles.FindAsync(id);
-            if (role == null)
+            var Category = await _context.Categorys.FindAsync(id);
+            if (Category == null)
             {
                 return NotFound();
             }
 
-            _context.Roles.Remove(role);
+            _context.Categorys.Remove(Category);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
     }
+}
