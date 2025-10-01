@@ -35,13 +35,13 @@ public partial class HrmwebContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost,1433;Database=HRMWeb;User Id=sa;Password=1@Uuuvkmqke;TrustServerCertificate=True");
+        => optionsBuilder.UseSqlServer("Server=localhost,1433;Database=HRMWeb;User Id=sa;Password=1@Uuuvkmqke;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Applypost>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__applypos__3213E83FB4D8D4A4");
+            entity.HasKey(e => e.Id).HasName("PK__applypos__3213E83F134D7CAC");
 
             entity.ToTable("applypost");
 
@@ -64,16 +64,18 @@ public partial class HrmwebContext : DbContext
 
             entity.HasOne(d => d.Recruitment).WithMany(p => p.Applyposts)
                 .HasForeignKey(d => d.RecruitmentId)
-                .HasConstraintName("FK__applypost__recru__5165187F");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__applypost__recru__4F7CD00D");
 
             entity.HasOne(d => d.User).WithMany(p => p.Applyposts)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__applypost__user___52593CB8");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__applypost__user___5070F446");
         });
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__category__3213E83FF415504F");
+            entity.HasKey(e => e.Id).HasName("PK__category__3213E83F17A01FE0");
 
             entity.ToTable("category");
 
@@ -82,11 +84,12 @@ public partial class HrmwebContext : DbContext
                 .HasMaxLength(255)
                 .IsUnicode(false)
                 .HasColumnName("name");
+            entity.Property(e => e.NumberChoose).HasColumnName("number_choose");
         });
 
         modelBuilder.Entity<Company>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__company__3213E83F390A2EA9");
+            entity.HasKey(e => e.Id).HasName("PK__company__3213E83FC620536F");
 
             entity.ToTable("company");
 
@@ -119,12 +122,13 @@ public partial class HrmwebContext : DbContext
 
             entity.HasOne(d => d.User).WithMany(p => p.Companies)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__company__user_id__412EB0B6");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__company__user_id__3F466844");
         });
 
         modelBuilder.Entity<Cv>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__cv__3213E83FD0EFAC10");
+            entity.HasKey(e => e.Id).HasName("PK__cv__3213E83F56489319");
 
             entity.ToTable("cv");
 
@@ -134,11 +138,16 @@ public partial class HrmwebContext : DbContext
                 .IsUnicode(false)
                 .HasColumnName("file_name");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.Cvs)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__cv__user_id__3C69FB99");
         });
 
         modelBuilder.Entity<FollowCompany>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__follow_c__3213E83FED6B84C5");
+            entity.HasKey(e => e.Id).HasName("PK__follow_c__3213E83F2D8171FB");
 
             entity.ToTable("follow_company");
 
@@ -148,16 +157,18 @@ public partial class HrmwebContext : DbContext
 
             entity.HasOne(d => d.Company).WithMany(p => p.FollowCompanies)
                 .HasForeignKey(d => d.CompanyId)
-                .HasConstraintName("FK__follow_co__compa__4D94879B");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__follow_co__compa__4BAC3F29");
 
             entity.HasOne(d => d.User).WithMany(p => p.FollowCompanies)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__follow_co__user___4E88ABD4");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__follow_co__user___4CA06362");
         });
 
         modelBuilder.Entity<Recruitment>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__recruitm__3213E83F775B1FA4");
+            entity.HasKey(e => e.Id).HasName("PK__recruitm__3213E83FBD0A5131");
 
             entity.ToTable("recruitment");
 
@@ -209,16 +220,18 @@ public partial class HrmwebContext : DbContext
 
             entity.HasOne(d => d.Category).WithMany(p => p.Recruitments)
                 .HasForeignKey(d => d.CategoryId)
-                .HasConstraintName("FK__recruitme__categ__45F365D3");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__recruitme__categ__440B1D61");
 
             entity.HasOne(d => d.Company).WithMany(p => p.Recruitments)
                 .HasForeignKey(d => d.CompanyId)
-                .HasConstraintName("FK__recruitme__compa__46E78A0C");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__recruitme__compa__44FF419A");
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__role__3213E83FA6D8430B");
+            entity.HasKey(e => e.Id).HasName("PK__role__3213E83FF6C56BF3");
 
             entity.ToTable("role");
 
@@ -231,7 +244,7 @@ public partial class HrmwebContext : DbContext
 
         modelBuilder.Entity<SaveJob>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__save_job__3213E83FE1945EEB");
+            entity.HasKey(e => e.Id).HasName("PK__save_job__3213E83F296D4BF1");
 
             entity.ToTable("save_job");
 
@@ -241,16 +254,18 @@ public partial class HrmwebContext : DbContext
 
             entity.HasOne(d => d.Recruitment).WithMany(p => p.SaveJobs)
                 .HasForeignKey(d => d.RecruitmentId)
-                .HasConstraintName("FK__save_job__recrui__49C3F6B7");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__save_job__recrui__47DBAE45");
 
             entity.HasOne(d => d.User).WithMany(p => p.SaveJobs)
                 .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK__save_job__user_i__4AB81AF0");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__save_job__user_i__48CFD27E");
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__user__3213E83F291EA9F4");
+            entity.HasKey(e => e.Id).HasName("PK__user__3213E83F9318F4F8");
 
             entity.ToTable("user");
 
@@ -287,7 +302,8 @@ public partial class HrmwebContext : DbContext
 
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
-                .HasConstraintName("FK__user__role_id__3E52440B");
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__user__role_id__398D8EEE");
         });
 
         OnModelCreatingPartial(modelBuilder);
