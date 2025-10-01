@@ -1,5 +1,7 @@
 import React from 'react';
-import { Container, Row, Col, Navbar, Nav, Button, Image } from 'react-bootstrap';
+import { Container, Row, Col, Image } from 'react-bootstrap';
+import heroImg from '../../assets/images/hero_1.jpg';
+
 
 // Hero Section
 const HeroSection: React.FC = () => (
@@ -28,7 +30,7 @@ const StatsSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-5 bg-image overlay-primary fixed overlay" style={{ backgroundImage: "url('images/hero_1.jpg')" }}>
+    <section className="py-5 bg-image overlay-primary fixed overlay" style={{ backgroundImage: `url(${heroImg})` }}>
       <Container>
         <Row className="mb-5 justify-content-center text-center text-white">
           <Col md={7}>
