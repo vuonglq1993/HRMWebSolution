@@ -5,8 +5,35 @@ using server.Repositories.Interfaces;
 using server.Repositories.Implementations;
 using server.Services.Interfaces;
 using server.Services.Implementations;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// JWT Authentication
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // Add controllers + avoid reference loop
 builder.Services.AddControllers()
@@ -18,8 +45,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowViteDev", policy =>
     {
         policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // nếu có cookie
     });
 });
 
@@ -68,6 +96,11 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors("AllowViteDev");
+
+
+app.UseAuthentication(); 
 app.UseAuthorization();
+app.UseMiddleware<server.Middleware.JwtMiddleware>(); // attach user info
+
 app.MapControllers();
 app.Run();

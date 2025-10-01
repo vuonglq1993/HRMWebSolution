@@ -5,6 +5,8 @@ using server.Services.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BCrypt.Net;
+
 
 namespace server.Services.Implementations
 {
@@ -51,7 +53,10 @@ namespace server.Services.Implementations
         }
 
         public async Task<UserViewDto> CreateAsync(UserCreateDto dto)
-        {
+        {   
+            
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
             var ent = new User
             {
                 Address = dto.Address,
@@ -59,7 +64,7 @@ namespace server.Services.Implementations
                 Email = dto.Email,
                 FullName = dto.FullName,
                 Image = dto.Image,
-                Password = dto.Password,
+                Password = hashedPassword, 
                 PhoneNumber = dto.PhoneNumber,
                 RoleId = dto.RoleId,
                 Status = dto.Status
@@ -90,7 +95,11 @@ namespace server.Services.Implementations
             ent.Email = dto.Email;
             ent.FullName = dto.FullName;
             ent.Image = dto.Image;
-            ent.Password = dto.Password;
+            
+            if (!string.IsNullOrEmpty(dto.Password))
+            {
+                ent.Password = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            } 
             ent.PhoneNumber = dto.PhoneNumber;
             ent.RoleId = dto.RoleId;
             ent.Status = dto.Status;
@@ -118,5 +127,69 @@ namespace server.Services.Implementations
             await _repo.DeleteAsync(id);
             return true;
         }
+        
+        public async Task<UserViewDto?> UpdateProfileAsync(int id, UserProfileUpdateDto dto)
+        {
+            var user = await _repo.GetByIdAsync(id);
+            if (user == null) return null;
+
+            user.FullName = dto.FullName;
+            user.Address = dto.Address;
+            user.Description = dto.Description;
+            user.PhoneNumber = dto.PhoneNumber;
+            user.Email = dto.Email;
+            user.Image = dto.Image;
+
+            if (!string.IsNullOrEmpty(dto.NewPassword))
+                user.Password = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+
+            await _repo.UpdateAsync(user);
+
+            var loaded = await _repo.GetByIdAsync(id);
+            return new UserViewDto
+            {
+                Id = loaded!.Id,
+                FullName = loaded.FullName,
+                Address = loaded.Address,
+                Description = loaded.Description,
+                PhoneNumber = loaded.PhoneNumber,
+                Email = loaded.Email,
+                Image = loaded.Image,
+                RoleId = loaded.RoleId,
+                RoleName = loaded.Role?.RoleName,
+                Status = loaded.Status
+            };
+        }
+        
+        public async Task<UserViewDto?> GetByEmailAsync(string email)
+        {
+            var users = await _repo.GetAllAsync(); // hoặc repo có GetByEmailAsync riêng
+            var u = users.FirstOrDefault(x => x.Email == email);
+            if (u == null) return null;
+
+            return new UserViewDto
+            {
+                Id = u.Id,
+                Address = u.Address,
+                Description = u.Description,
+                Email = u.Email,
+                FullName = u.FullName,
+                Image = u.Image,
+                PhoneNumber = u.PhoneNumber,
+                RoleId = u.RoleId,
+                RoleName = u.Role?.RoleName,
+                Status = u.Status
+            };
+        }
+
+        public async Task<bool> CheckPasswordAsync(string email, string password)
+        {
+            var user = await _repo.GetAllAsync();
+            var u = user.FirstOrDefault(x => x.Email == email);
+            if (u == null) return false;
+
+            return BCrypt.Net.BCrypt.Verify(password, u.Password);
+        }
+
     }
 }

@@ -1,8 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, NavDropdown, Container, Button } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
+import { useNavigate } from 'react-router-dom';
 
 const SiteNavbar: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsLoggedIn(!!token); // kiểm tra login
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    navigate("/login");
+  };
   return (
     <Navbar expand="lg" bg="dark" variant="dark" className="">
       <Container>
@@ -42,16 +56,22 @@ const SiteNavbar: React.FC = () => {
             </LinkContainer>
 
             <LinkContainer to="/contact">
-              <Nav.Link active>Contact</Nav.Link>
+              <Nav.Link>Contact</Nav.Link>
             </LinkContainer>
           </Nav>
           <div className="d-flex">
             <LinkContainer to="/post-job">
               <Button variant="outline-primary" className="me-2">Post a Job</Button>
             </LinkContainer>
-            <LinkContainer to="/login">
-              <Button variant="primary">Log In</Button>
-            </LinkContainer>
+            {isLoggedIn ? (
+              <Button variant="primary" onClick={handleLogout}>
+                Hello (Đăng xuất)
+              </Button>
+            ) : (
+              <LinkContainer to="/login">
+                <Button variant="primary">Log In</Button>
+              </LinkContainer>
+            )}
           </div>
         </Navbar.Collapse>
       </Container>
