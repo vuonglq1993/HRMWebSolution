@@ -133,12 +133,12 @@ namespace server.Services.Implementations
             var user = await _repo.GetByIdAsync(id);
             if (user == null) return null;
 
-            user.FullName = dto.FullName;
-            user.Address = dto.Address;
-            user.Description = dto.Description;
-            user.PhoneNumber = dto.PhoneNumber;
-            user.Email = dto.Email;
-            user.Image = dto.Image;
+            if (dto.FullName != null) user.FullName = dto.FullName;
+            if (dto.Address != null) user.Address = dto.Address;
+            if (dto.Description != null) user.Description = dto.Description;
+            if (dto.PhoneNumber != null) user.PhoneNumber = dto.PhoneNumber;
+            if (dto.Email != null) user.Email = dto.Email;
+            if (dto.Image != null) user.Image = dto.Image;
 
             if (!string.IsNullOrEmpty(dto.NewPassword))
                 user.Password = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
@@ -155,12 +155,13 @@ namespace server.Services.Implementations
                 PhoneNumber = loaded.PhoneNumber,
                 Email = loaded.Email,
                 Image = loaded.Image,
-                RoleId = loaded.RoleId,
+                RoleId = loaded.RoleId, // không đổi
                 RoleName = loaded.Role?.RoleName,
                 Status = loaded.Status
             };
         }
-        
+
+
         public async Task<UserViewDto?> GetByEmailAsync(string email)
         {
             var users = await _repo.GetAllAsync(); // hoặc repo có GetByEmailAsync riêng

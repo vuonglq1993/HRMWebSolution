@@ -25,6 +25,8 @@ const UserProfilePage: React.FC = () => {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [uploading, setUploading] = useState(false);
+
 
   const API_URL = import.meta.env.VITE_API_URL ?? window.location.origin;
 
@@ -49,10 +51,10 @@ const UserProfilePage: React.FC = () => {
   }, [id, API_URL]);
 
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
+    const file = e.target.files?.[0];
     if (file) {
       setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
+      setAvatarPreview(URL.createObjectURL(file)); // preview ngay
     }
   };
 
@@ -68,22 +70,24 @@ const UserProfilePage: React.FC = () => {
     }
   };
 
+
+
   const handleSaveProfile = async () => {
     if (!user) return;
-    try {
-      if (newPassword && newPassword !== confirmPassword) {
-        alert("Passwords do not match!");
-        return;
-      }
+    if (newPassword && newPassword !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
 
+    try {
+      setUploading(true);
       const token = localStorage.getItem("token");
 
-      let imageUrl = user.image ?? null; // giữ ảnh cũ nếu không upload
+      let imageUrl = user.image ?? null;
 
-      // 1) Upload file nếu có
+      // 1. Nếu có file mới thì upload trước
       if (avatarFile) {
         const formData = new FormData();
-        // backend upload controller nhận param name là "file"
         formData.append("file", avatarFile);
 
         const uploadRes = await axios.post(`${API_URL}/upload`, formData, {
@@ -93,25 +97,22 @@ const UserProfilePage: React.FC = () => {
           },
         });
 
-        imageUrl = uploadRes.data.url; // ex: "/uploads/images/xxx.jpg"
+        imageUrl = uploadRes.data.url; // ✅ lấy url trả về
       }
 
-      // 2) Gọi API update profile (backend UpdateProfileAsync nhận dto.Email và dto.NewPassword)
-      const updateRes = await axios.put(
-        `${API_URL}/user/${id}/updateUserProfile`,
-        {
-          fullName: user.fullName,
-          phoneNumber: user.phoneNumber,
-          address: user.address,
-          description: user.description,
-          email: user.email, // gửi lại email (không cho phép sửa trên UI)
-          image: imageUrl,
-          newPassword: newPassword || null,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      // 2. Gửi update profile
+      const payload = {
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        address: user.address,
+        description: user.description,
+        image: imageUrl,
+        newPassword: newPassword || null,
+      };
+
+      const updateRes = await axios.put(`${API_URL}/user/profile/${id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       setUser(updateRes.data);
       setEditMode(false);
@@ -120,12 +121,13 @@ const UserProfilePage: React.FC = () => {
       setNewPassword("");
       setConfirmPassword("");
       alert("Profile updated successfully!");
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       alert("Failed to update profile");
+    } finally {
+      setUploading(false);
     }
   };
-
   if (loading) return <Spinner animation="border" />;
 
   if (!user) return <p>User not found</p>;
@@ -146,9 +148,14 @@ const UserProfilePage: React.FC = () => {
             {editMode && (
               <Form.Group controlId="avatarUpload" className="mt-2">
                 <Form.Label>Upload Avatar</Form.Label>
-                <Form.Control type="file" accept="image/*" onChange={handleAvatarChange} />
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                />
               </Form.Group>
             )}
+
           </div>
 
           <p>
@@ -239,8 +246,8 @@ const UserProfilePage: React.FC = () => {
           <div className="mt-3 text-center">
             {editMode ? (
               <>
-                <Button variant="success" onClick={handleSaveProfile} className="me-2">
-                  Save
+                <Button variant="success" onClick={handleSaveProfile} className="me-2" disabled={uploading}>
+                  {uploading ? <Spinner animation="border" size="sm" /> : "Save"}
                 </Button>
                 <Button
                   variant="secondary"
