@@ -42,34 +42,34 @@ const LoginSignUpPage: React.FC = () => {
 
   // --- VALIDATE FUNCTIONS ---
   const validateEmail = (email: string) => {
-    if (!email) return "Email bắt buộc";
-    if (!/\S+@\S+\.\S+/.test(email)) return "Email không hợp lệ";
+    if (!email) return "Email is required";
+    if (!/\S+@\S+\.\S+/.test(email)) return "Invalid email address";
     return "";
   };
 
   const validatePassword = (password: string) => {
-    if (!password) return "Password bắt buộc";
+    if (!password) return "Password is required";
     return "";
   };
 
   const validateRePassword = (password: string, rePassword: string) => {
-    if (password !== rePassword) return "Password và Re-Type Password phải giống nhau";
+    if (password !== rePassword) return "Password and Re-Type Password must match";
     return "";
   };
 
   const validateFullName = (fullName: string) => {
-    if (!fullName) return "Full name bắt buộc";
+    if (!fullName) return "Full name is required";
     return "";
   };
 
-  const validateaddress = (address: string) => {
-    if (!address) return "address bắt buộc";
+  const validateAddress = (address: string) => {
+    if (!address) return "Address is required";
     return "";
   };
 
   const validatePhone = (phone?: string) => {
     if (!phone) return "";
-    if (!/^\d{9,15}$/.test(phone)) return "SĐT phải là số và từ 9 đến 15 chữ số";
+    if (!/^\d{9,15}$/.test(phone)) return "Phone must be numeric and between 9 to 15 digits";
     return "";
   };
 
@@ -78,7 +78,6 @@ const LoginSignUpPage: React.FC = () => {
     newErrors.email = validateEmail(loginData.email);
     newErrors.password = validatePassword(loginData.password);
 
-    // Remove empty errors
     Object.keys(newErrors).forEach((key) => !newErrors[key] && delete newErrors[key]);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -91,11 +90,13 @@ const LoginSignUpPage: React.FC = () => {
     newErrors.password = validatePassword(signUpData.password);
     newErrors.rePassword = validateRePassword(signUpData.password, signUpData.rePassword);
     newErrors.phoneNumber = validatePhone(signUpData.phoneNumber);
+    newErrors.address = validateAddress(signUpData.address);
 
     Object.keys(newErrors).forEach((key) => !newErrors[key] && delete newErrors[key]);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
   const isLoginFormValid = (): boolean => {
     return (
       loginData.email.trim() !== "" &&
@@ -104,18 +105,21 @@ const LoginSignUpPage: React.FC = () => {
       !validatePassword(loginData.password)
     );
   };
+
   const isSignUpFormValid = (): boolean => {
     return (
       signUpData.fullName.trim() !== "" &&
       signUpData.email.trim() !== "" &&
       signUpData.password.trim() !== "" &&
       signUpData.rePassword.trim() !== "" &&
+      signUpData.address.trim() !== "" &&
       !validateEmail(signUpData.email) &&
       !validatePassword(signUpData.password) &&
       !validateRePassword(signUpData.password, signUpData.rePassword) &&
       !validatePhone(signUpData.phoneNumber)
     );
   };
+
   // --- HANDLE LOGIN ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,11 +128,10 @@ const LoginSignUpPage: React.FC = () => {
     try {
       const res = await axios.post(`${API_URL}/auth/login`, loginData);
       localStorage.setItem("token", res.data.token);
-      alert("Login thành công!");
+      alert("Login successful!");
       navigate("/"); 
-
     } catch (err: any) {
-      alert("Login thất bại: " + (err.response?.data || err.message));
+      alert("Login failed: " + (err.response?.data || err.message));
     }
   };
 
@@ -147,11 +150,11 @@ const LoginSignUpPage: React.FC = () => {
         roleId: signUpData.roleId,
         status: 1,
       });
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
+      alert("Sign up successful! Please log in.");
       setIsLogin(true);
       setErrors({});
     } catch (err: any) {
-      alert("Đăng ký thất bại: " + (err.response?.data || err.message));
+      alert("Sign up failed: " + (err.response?.data || err.message));
     }
   };
 
@@ -179,7 +182,7 @@ const LoginSignUpPage: React.FC = () => {
             <Col lg={6}>
               {isLogin ? (
                 <>
-                  <h2 className="mb-4">Log In To JobBoard</h2>
+                  <h2 className="mb-4">Log In to JobBoard</h2>
                   <Form className="p-4 border rounded" onSubmit={handleLogin}>
                     <Form.Group className="mb-3" controlId="loginEmail">
                       <Form.Label>Email</Form.Label>
@@ -214,14 +217,14 @@ const LoginSignUpPage: React.FC = () => {
                     <Button
                       type="submit"
                       className="px-4 btn-primary text-white"
-                      disabled={!isLoginFormValid()} // disabled nếu form login không hợp lệ
+                      disabled={!isLoginFormValid()}
                     >
                       Log In
                     </Button>
                   </Form>
 
                   <div className="mt-3 text-center">
-                    <span>Bạn không có tài khoản? </span>
+                    <span>Don't have an account? </span>
                     <Button
                       variant="link"
                       className="p-0"
@@ -230,13 +233,13 @@ const LoginSignUpPage: React.FC = () => {
                         setErrors({});
                       }}
                     >
-                      Đăng ký ngay
+                      Sign up now
                     </Button>
                   </div>
                 </>
               ) : (
                 <>
-                  <h2 className="mb-4">Sign Up To JobBoard</h2>
+                  <h2 className="mb-4">Sign Up to JobBoard</h2>
                   <Form className="p-4 border rounded" onSubmit={handleSignUp}>
                     <Form.Group className="mb-3" controlId="signupFullName">
                       <Form.Label>Full Name</Form.Label>
@@ -276,13 +279,12 @@ const LoginSignUpPage: React.FC = () => {
                         value={signUpData.address}
                         onChange={(e) => setSignUpData({ ...signUpData, address: e.target.value })}
                         onBlur={() =>
-                          setErrors({ ...errors, address: validateaddress(signUpData.address) })
+                          setErrors({ ...errors, address: validateAddress(signUpData.address) })
                         }
                         isInvalid={!!errors.address}
                       />
                       <Form.Control.Feedback type="invalid">{errors.address}</Form.Control.Feedback>
                     </Form.Group>
-                    
 
                     <Form.Group className="mb-3" controlId="signupPhone">
                       <Form.Label>Phone Number</Form.Label>
@@ -347,14 +349,14 @@ const LoginSignUpPage: React.FC = () => {
                     <Button
                       type="submit"
                       className="px-4 btn-primary text-white"
-                      disabled={!isSignUpFormValid()} // disabled nếu form signup không hợp lệ
+                      disabled={!isSignUpFormValid()}
                     >
                       Sign Up
                     </Button>
                   </Form>
 
                   <div className="mt-3 text-center">
-                    <span>Bạn đã có tài khoản? </span>
+                    <span>Already have an account? </span>
                     <Button
                       variant="link"
                       className="p-0"
@@ -363,7 +365,7 @@ const LoginSignUpPage: React.FC = () => {
                         setErrors({});
                       }}
                     >
-                      Đăng nhập
+                      Log in
                     </Button>
                   </div>
                 </>
