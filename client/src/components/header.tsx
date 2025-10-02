@@ -1,15 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar, Nav, NavDropdown, Container, Button } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
+import jwt_decode from "jwt-decode";
+
 import { useNavigate } from 'react-router-dom';
+
 
 const SiteNavbar: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token); // kiểm tra login
+  }, []);
+
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsLoggedIn(true);
+      try {
+        const decoded: JwtPayload = jwt_decode(token);
+        setUserRole(decoded.Role || null);
+        setUserId(Number(decoded.UserId));
+      } catch (err) {
+        console.error("Invalid token");
+        setIsLoggedIn(false);
+        setUserRole(null);
+        setUserId(null);
+      }
+    }
   }, []);
 
   const handleLogout = () => {
@@ -60,18 +83,21 @@ const SiteNavbar: React.FC = () => {
             </LinkContainer>
           </Nav>
           <div className="d-flex">
-            <LinkContainer to="/post-job">
-              <Button variant="outline-primary" className="me-2">Post a Job</Button>
-            </LinkContainer>
+            {(userRole === "Admin" || userRole === "Employer") && (
+              <LinkContainer to="/post-job">
+                <Button variant="outline-primary" className="me-2">Post a Job</Button>
+              </LinkContainer>
+            )}
             {isLoggedIn ? (
-              <Button variant="primary" onClick={handleLogout}>
-                Hello (Đăng xuất)
-              </Button>
+              <LinkContainer to={userId ? `/user-profile/${userId}` : "/login"}>
+                <Button variant="primary">Hello</Button>
+              </LinkContainer>
             ) : (
               <LinkContainer to="/login">
                 <Button variant="primary">Log In</Button>
               </LinkContainer>
             )}
+
           </div>
         </Navbar.Collapse>
       </Container>

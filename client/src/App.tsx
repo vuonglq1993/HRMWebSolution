@@ -13,6 +13,7 @@ import LoginSignUpPage from './pages/login/login';
 import PortfolioSingle from './pages/portfoliosingle/portfolio-single';
 import Portfolio from './pages/portfolio/portfolio';
 import PostJob from './pages/post-job/post-job';
+import UserProfilePage from './pages/UserProfile/UserProfile';
 import './App.css';
 // import Home from './pages/Home'; // Giả sử bạn có trang Home.tsx
 
@@ -39,6 +40,7 @@ const App: React.FC = () => {
         <Route path="/portfolio-single" element={<PortfolioSingle />} />
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/post-job" element={<PostJob />} />
+        <Route path="/user-profile/:id" element={<UserProfilePage />} />
         {/* Bạn có thể thêm các route khác */}
       </Routes>
 
