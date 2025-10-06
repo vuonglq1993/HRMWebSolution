@@ -59,36 +59,19 @@ const SiteNavbar: React.FC = () => {
         <Navbar.Toggle aria-controls="navbar-nav" />
         <Navbar.Collapse id="navbar-nav">
           <Nav className="mx-auto">
-            <LinkContainer to="/">
+            <LinkContainer to="/" className="mx-1">
               <Nav.Link>Home</Nav.Link>
             </LinkContainer>
-            <LinkContainer to="/about">
+            <LinkContainer to="/about" className="mx-1">
               <Nav.Link>About</Nav.Link>
             </LinkContainer>
-
-            <NavDropdown title="Job Listings" id="job-dropdown">
-              <LinkContainer to="/job-single">
-                <NavDropdown.Item>Job Single</NavDropdown.Item>
-              </LinkContainer>
-              {/* 👇 đây là menu con, luôn hiển thị */}
-              <LinkContainer to="/post-job">
-                <NavDropdown.Item>Post a Job</NavDropdown.Item>
-              </LinkContainer>
-            </NavDropdown>
-
-            <NavDropdown title="Pages" id="pages-dropdown">
-              <LinkContainer to="/services">
-                <NavDropdown.Item>Services</NavDropdown.Item>
-              </LinkContainer>
-              <LinkContainer to="/blog-single">
-                <NavDropdown.Item>Blog Single</NavDropdown.Item>
-              </LinkContainer>
-            </NavDropdown>
-
-            <LinkContainer to="/blog">
+            <LinkContainer to="/job-listing" className="mx-1">
+              <Nav.Link>Recruitments</Nav.Link>
+            </LinkContainer>
+            <LinkContainer to="/blog" className="mx-1">
               <Nav.Link>Blog</Nav.Link>
             </LinkContainer>
-            <LinkContainer to="/contact">
+            <LinkContainer to="/contact" className="mx-1">
               <Nav.Link>Contact</Nav.Link>
             </LinkContainer>
           </Nav>

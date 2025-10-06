@@ -1,7 +1,21 @@
 import React, { useEffect, useState, ChangeEvent } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import jwt_decode from "jwt-decode";
 import { Container, Card, Spinner, Image, Button, Form } from "react-bootstrap";
+
+interface JwtPayload {
+  UserId?: number;
+  "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"?: string;
+  exp?: number;
+}
+interface SavedJob {
+  id: number;
+  recruitmentId: number;
+  jobTitle: string;
+  companyName: string;
+  categoryName: string;
+}
 
 interface UserViewDto {
   id: number;
@@ -12,7 +26,7 @@ interface UserViewDto {
   description?: string;
   roleId: number;
   roleName?: string;
-  image?: string; // có thể là "/uploads/..." hoặc "http://..." hoặc "uploads/..."
+  image?: string;
   status: number;
 }
 
@@ -26,18 +40,43 @@ const UserProfilePage: React.FC = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [savedJobs, setSavedJobs] = useState<SavedJob[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(true);
 
 
   const API_URL = import.meta.env.VITE_API_URL ?? window.location.origin;
 
+  // ✅ Decode token and extract UserId & Role
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decoded: JwtPayload = jwt_decode(token);
+        const role =
+          decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+        setUserRole(role || null);
+        setUserId(decoded.UserId ? Number(decoded.UserId) : null);
+        console.log("✅ Decoded token:", decoded);
+      } catch (err) {
+        console.error("Invalid token", err);
+        setUserRole(null);
+        setUserId(null);
+      }
+    }
+  }, []);
+
+  // ✅ Fetch user info
   useEffect(() => {
     const fetchUser = async () => {
+      if (!userId && !id) return;
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get<UserViewDto>(`${API_URL}/user/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const userTargetId = id ?? userId; // Ưu tiên param trên URL, fallback về token
+
+        const res = await axios.get<UserViewDto>(`${API_URL}/user/${userTargetId}`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
         setUser(res.data);
       } catch (err) {
@@ -47,30 +86,41 @@ const UserProfilePage: React.FC = () => {
       }
     };
 
-    if (id) fetchUser();
-  }, [id, API_URL]);
+    fetchUser();
+  }, [userId, id, API_URL]);
+
+  useEffect(() => {
+    const fetchSavedJobs = async () => {
+      if (!userId) return;
+      try {
+        const res = await axios.get(`${API_URL}/savejob/user/${userId}`);
+        setSavedJobs(res.data);
+      } catch (err) {
+        console.error("❌ Failed to load saved jobs", err);
+      } finally {
+        setLoadingSaved(false);
+      }
+    };
+
+    fetchSavedJobs();
+  }, [userId, API_URL]);
 
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file)); // preview ngay
+      setAvatarPreview(URL.createObjectURL(file));
     }
   };
 
-  // Build full image URL robustly
   const buildImageUrl = (path?: string | null) => {
     if (!path) return "/images/default-avatar.png";
     try {
-      // new URL(path, base) will produce full URL whether path is absolute ("/...") or relative ("uploads/...")
       return new URL(path, API_URL).toString();
     } catch {
-      // fallback
       return path;
     }
   };
-
-
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -82,10 +132,9 @@ const UserProfilePage: React.FC = () => {
     try {
       setUploading(true);
       const token = localStorage.getItem("token");
-
       let imageUrl = user.image ?? null;
 
-      // 1. Nếu có file mới thì upload trước
+      // 1️⃣ Upload avatar (nếu có)
       if (avatarFile) {
         const formData = new FormData();
         formData.append("file", avatarFile);
@@ -97,10 +146,10 @@ const UserProfilePage: React.FC = () => {
           },
         });
 
-        imageUrl = uploadRes.data.url; // ✅ lấy url trả về
+        imageUrl = uploadRes.data.url;
       }
 
-      // 2. Gửi update profile
+      // 2️⃣ Update profile
       const payload = {
         fullName: user.fullName,
         phoneNumber: user.phoneNumber,
@@ -110,9 +159,11 @@ const UserProfilePage: React.FC = () => {
         newPassword: newPassword || null,
       };
 
-      const updateRes = await axios.put(`${API_URL}/user/profile/${id}`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const updateRes = await axios.put(
+        `${API_URL}/user/profile/${user.id}`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       setUser(updateRes.data);
       setEditMode(false);
@@ -128,8 +179,8 @@ const UserProfilePage: React.FC = () => {
       setUploading(false);
     }
   };
-  if (loading) return <Spinner animation="border" />;
 
+  if (loading) return <Spinner animation="border" />;
   if (!user) return <p>User not found</p>;
 
   return (
@@ -155,7 +206,6 @@ const UserProfilePage: React.FC = () => {
                 />
               </Form.Group>
             )}
-
           </div>
 
           <p>
@@ -172,8 +222,7 @@ const UserProfilePage: React.FC = () => {
           </p>
 
           <p>
-            <strong>Email:</strong> {/* email không được sửa, luôn hiển thị text */}
-            {" "}{user.email}
+            <strong>Email:</strong> {user.email}
           </p>
 
           <p>
@@ -182,7 +231,9 @@ const UserProfilePage: React.FC = () => {
               <Form.Control
                 type="text"
                 value={user.phoneNumber || ""}
-                onChange={(e) => setUser({ ...user, phoneNumber: e.target.value })}
+                onChange={(e) =>
+                  setUser({ ...user, phoneNumber: e.target.value })
+                }
               />
             ) : (
               user.phoneNumber
@@ -208,12 +259,47 @@ const UserProfilePage: React.FC = () => {
               <Form.Control
                 as="textarea"
                 value={user.description || ""}
-                onChange={(e) => setUser({ ...user, description: e.target.value })}
+                onChange={(e) =>
+                  setUser({ ...user, description: e.target.value })
+                }
               />
             ) : (
               user.description
             )}
           </p>
+
+          <hr />
+          <h5 className="mt-4">Saved Jobs</h5>
+          {loadingSaved ? (
+            <Spinner animation="border" />
+          ) : savedJobs.length === 0 ? (
+            <p>You haven't saved any jobs yet.</p>
+          ) : (
+            <div className="mt-3">
+              {savedJobs.map((job) => (
+                <Card key={job.id} className="mb-2 p-2">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6>{job.jobTitle}</h6>
+                      <p className="mb-0 text-muted">
+                        {job.companyName} • {job.categoryName}
+                      </p>
+                    </div>
+                    <div>
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => window.location.href = `/job-single/${job.recruitmentId}`}
+                      >
+                        View Job
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
 
           {editMode && (
             <>
@@ -237,17 +323,27 @@ const UserProfilePage: React.FC = () => {
           )}
 
           <p>
-            <strong>Role:</strong> {user.roleName}
+            <strong>Role:</strong> {user.roleName ?? userRole}
           </p>
           <p>
-            <strong>Status:</strong> {user.status === 1 ? "Active" : "Inactive"}
+            <strong>Status:</strong>{" "}
+            {user.status === 1 ? "Active" : "Inactive"}
           </p>
 
           <div className="mt-3 text-center">
             {editMode ? (
               <>
-                <Button variant="success" onClick={handleSaveProfile} className="me-2" disabled={uploading}>
-                  {uploading ? <Spinner animation="border" size="sm" /> : "Save"}
+                <Button
+                  variant="success"
+                  onClick={handleSaveProfile}
+                  className="me-2"
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <Spinner animation="border" size="sm" />
+                  ) : (
+                    "Save"
+                  )}
                 </Button>
                 <Button
                   variant="secondary"

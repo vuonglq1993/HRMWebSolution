@@ -31,6 +31,7 @@ namespace server.DTOs
         public string? RoleName { get; set; }
         public int Status { get; set; }
     }
+
     public class UserProfileUpdateDto
     {
         public string? FullName { get; set; }
@@ -39,11 +40,20 @@ namespace server.DTOs
         public string? PhoneNumber { get; set; }
         public string? Email { get; set; }
         public string? Image { get; set; }
-        public string? NewPassword { get; set; } // optional
+        public string? NewPassword { get; set; }
     }
+
     public class LoginDto
     {
         public string Email { get; set; } = null!;
         public string Password { get; set; } = null!;
+    }
+
+    public class CreateGoogleUserDto
+    {
+        public string Email { get; set; } = null!;
+        public string FullName { get; set; } = null!;
+        public string? Image { get; set; }
+        public string RoleName { get; set; } = "Employee";
     }
 }

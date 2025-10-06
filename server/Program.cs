@@ -7,6 +7,7 @@ using server.Services.Interfaces;
 using server.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using server.Helpers;
 using System.Text;
 
 
@@ -77,6 +78,7 @@ builder.Services.AddScoped<IApplypostService, ApplypostService>();
 builder.Services.AddScoped<ICvService, CvService>();
 builder.Services.AddScoped<ISaveJobService, SaveJobService>();
 builder.Services.AddScoped<IFollowCompanyService, FollowCompanyService>();
+
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();

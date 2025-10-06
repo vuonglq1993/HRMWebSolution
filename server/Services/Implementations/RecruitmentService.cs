@@ -11,7 +11,10 @@ namespace server.Services.Implementations
     public class RecruitmentService : IRecruitmentService
     {
         private readonly IRecruitmentRepository _repo;
-        public RecruitmentService(IRecruitmentRepository repo) { _repo = repo; }
+        public RecruitmentService(IRecruitmentRepository repo)
+        {
+            _repo = repo;
+        }
 
         public async Task<IEnumerable<RecruitmentViewDto>> GetAllAsync()
         {
@@ -30,7 +33,14 @@ namespace server.Services.Implementations
         {
             var r = await _repo.GetByIdAsync(id);
             if (r == null) return null;
-            return new RecruitmentViewDto { Id = r.Id, Title = r.Title, CompanyName = r.Company?.NameCompany, CategoryName = r.Category?.Name, Status = r.Status };
+            return new RecruitmentViewDto
+            {
+                Id = r.Id,
+                Title = r.Title,
+                CompanyName = r.Company?.NameCompany,
+                CategoryName = r.Category?.Name,
+                Status = r.Status
+            };
         }
 
         public async Task<RecruitmentViewDto> CreateAsync(RecruitmentCreateDto dto)
@@ -52,15 +62,24 @@ namespace server.Services.Implementations
                 Type = dto.Type,
                 Views = dto.Views
             };
+
             var created = await _repo.AddAsync(ent);
             var loaded = await _repo.GetByIdAsync(created.Id);
-            return new RecruitmentViewDto { Id = loaded!.Id, Title = loaded.Title, CompanyName = loaded.Company?.NameCompany, CategoryName = loaded.Category?.Name, Status = loaded.Status };
+            return new RecruitmentViewDto
+            {
+                Id = loaded!.Id,
+                Title = loaded.Title,
+                CompanyName = loaded.Company?.NameCompany,
+                CategoryName = loaded.Category?.Name,
+                Status = loaded.Status
+            };
         }
 
         public async Task<RecruitmentViewDto?> UpdateAsync(int id, RecruitmentUpdateDto dto)
         {
             var ent = await _repo.GetByIdAsync(id);
             if (ent == null) return null;
+
             ent.Address = dto.Address;
             ent.CategoryId = dto.CategoryId;
             ent.CompanyId = dto.CompanyId;
@@ -75,9 +94,18 @@ namespace server.Services.Implementations
             ent.Title = dto.Title;
             ent.Type = dto.Type;
             ent.Views = dto.Views;
+
             await _repo.UpdateAsync(ent);
             var loaded = await _repo.GetByIdAsync(id);
-            return new RecruitmentViewDto { Id = loaded!.Id, Title = loaded.Title, CompanyName = loaded.Company?.NameCompany, CategoryName = loaded.Category?.Name, Status = loaded.Status };
+
+            return new RecruitmentViewDto
+            {
+                Id = loaded!.Id,
+                Title = loaded.Title,
+                CompanyName = loaded.Company?.NameCompany,
+                CategoryName = loaded.Category?.Name,
+                Status = loaded.Status
+            };
         }
 
         public async Task<bool> DeleteAsync(int id)
@@ -86,6 +114,27 @@ namespace server.Services.Implementations
             if (ent == null) return false;
             await _repo.DeleteAsync(id);
             return true;
+        }
+
+        // 🔍 Hàm SearchAsync mới
+        public async Task<IEnumerable<RecruitmentViewDto>> SearchAsync(string keyword)
+        {
+            var list = await _repo.GetAllAsync();
+
+            var filtered = list.Where(r =>
+                (!string.IsNullOrEmpty(r.Title) && r.Title.ToLower().Contains(keyword.ToLower())) ||
+                (!string.IsNullOrEmpty(r.Company?.NameCompany) && r.Company.NameCompany.ToLower().Contains(keyword.ToLower())) ||
+                (!string.IsNullOrEmpty(r.Category?.Name) && r.Category.Name.ToLower().Contains(keyword.ToLower()))
+            );
+
+            return filtered.Select(r => new RecruitmentViewDto
+            {
+                Id = r.Id,
+                Title = r.Title,
+                CompanyName = r.Company?.NameCompany,
+                CategoryName = r.Category?.Name,
+                Status = r.Status
+            }).ToList();
         }
     }
 }

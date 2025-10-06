@@ -12,12 +12,16 @@ namespace server.Repositories.Implementations
 
         public override async Task<IEnumerable<Cv>> GetAllAsync()
         {
-            return await _context.Cvs.Include(cv => cv.User).ToListAsync();
+            return await _context.Cvs
+                .Include(cv => cv.User)
+                .ToListAsync();
         }
 
         public override async Task<Cv?> GetByIdAsync(int id)
         {
-            return await _context.Cvs.Include(cv => cv.User).FirstOrDefaultAsync(cv => cv.Id == id);
+            return await _context.Cvs
+                .Include(cv => cv.User)
+                .FirstOrDefaultAsync(cv => cv.Id == id);
         }
     }
 }

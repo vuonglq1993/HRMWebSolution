@@ -1,71 +1,131 @@
-import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Form, Button, Alert, Spinner } from "react-bootstrap";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function ApplyForm() {
-  const { id } = useParams<{ id: string }>(); // lấy từ route /apply/:id
-  const recruitmentId = parseInt(id || "0");
+  const { id } = useParams();
+  const navigate = useNavigate();
 
+  // --- State ---
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
 
-  const userId = localStorage.getItem("userId"); // lấy từ login
+  // --- Auth info ---
+  const [token, setToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+  const recruitmentId = Number(id) || 0;
 
+  // --- Auto load token + id từ localStorage ---
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const storedUserId = localStorage.getItem("userId");
+
+    if (!storedToken || !storedUserId) {
+      setMessage("⚠️ Please log in before applying.");
+      setTimeout(() => navigate("/login"), 1500);
+      return;
+    }
+
+    setToken(storedToken);
+    setUserId(Number(storedUserId));
+  }, [navigate]);
+
+  // --- Validate ---
+  const validate = () => {
+    if (!token || !userId) return "Please login first.";
+    if (!cvFile) return "Please select a CV file.";
+    if (!recruitmentId) return "Invalid recruitment ID.";
+    return null;
+  };
+
+  // --- Upload CV ---
+  const uploadCV = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("userId", String(userId)); // ✅ thêm dòng này
+
+
+    const res = await axios.post(`${API_URL}/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    console.log("upload response:", res.data);
+    const fileUrl = res.data.url || res.data.fileName || res.data.path;
+    if (!fileUrl) throw new Error("Invalid upload response (no URL returned)");
+    return fileUrl;
+  };
+
+  // --- Submit ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!userId || !cvFile) {
-      setMessage("Please login and select a CV file!");
+    const error = validate();
+    if (error) {
+      setMessage(error);
       return;
     }
 
     try {
       setLoading(true);
-      setMessage("");
+      setMessage(null);
 
-      // 1. Upload file PDF
-      const formData = new FormData();
-      formData.append("file", cvFile);
+      // 1️⃣ Upload CV file
+      const fileUrl = await uploadCV(cvFile!);
 
-      const uploadRes = await axios.post(`${API_URL}/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const fileUrl = uploadRes.data.url;
-
-      // 2. Apply post
-      await axios.post(`${API_URL}/applypost`, {
-        userId: parseInt(userId),
+      // 2️⃣ Tạo payload apply
+      const payload = {
+        userId,
         recruitmentId,
         nameCv: fileUrl,
         text,
-        status: 1, // Pending
+        status: 1,
         createdAt: new Date().toISOString(),
-      });
+      };
 
-      setMessage("Apply successful!");
+      // 3️⃣ Gửi song song apply + lưu CV
+      await Promise.all([
+        axios.post(`${API_URL}/applypost`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.post(
+          `${API_URL}/cv`,
+          { userId, fileName: fileUrl },
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
+      ]);
+
+      setMessage("✅ Apply successful!");
       setCvFile(null);
       setText("");
-    } catch (err) {
-      console.error(err);
-      setMessage("Apply failed!");
+    } catch (err: any) {
+      console.error("Backend error:", err.response?.data || err.message);
+      setMessage(
+        "❌ Apply failed. " +
+          (err.response?.data?.message || "Check console for details.")
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  if (!recruitmentId) return <p>Invalid recruitment id</p>;
-
   return (
     <div className="container mt-5">
       <h2>Apply for Recruitment #{recruitmentId}</h2>
+
       <Form onSubmit={handleSubmit}>
-        {message && <Alert variant="info">{message}</Alert>}
+        {message && (
+          <Alert variant={message.includes("✅") ? "success" : "danger"}>
+            {message}
+          </Alert>
+        )}
 
         <Form.Group className="mb-3">
           <Form.Label>Upload CV (PDF)</Form.Label>

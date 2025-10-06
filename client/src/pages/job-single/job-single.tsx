@@ -1,7 +1,7 @@
+// src/pages/job/JobSinglePage.tsx
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import heroImg from "../../assets/images/hero_1.jpg";
-import { useNavigate } from "react-router-dom";
 
 interface Job {
   id: number;
@@ -15,104 +15,125 @@ const JobSinglePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
   const navigate = useNavigate();
-
-
   const API_URL = import.meta.env.VITE_API_URL;
-
+  const userId = localStorage.getItem("userId");
 
   useEffect(() => {
-    const fetchJob = async () => {
+    const fetchData = async () => {
+      if (!id) return;
       try {
-        const res = await fetch(`${API_URL}/recruitment/${id}`);
-        const data = await res.json();
-        setJob(data);
+        setLoading(true);
+
+        // Fetch job
+        const jobRes = await fetch(`${API_URL}/recruitment/${id}`);
+        if (!jobRes.ok) throw new Error("Failed to fetch job");
+        const jobData: Job = await jobRes.json();
+        setJob(jobData);
+
+        // Check saved
+        if (userId) {
+          const checkRes = await fetch(
+            `${API_URL}/savejob/check-saved?userId=${userId}&recruitmentId=${id}`
+          );
+          if (!checkRes.ok) throw new Error("Failed to check saved status");
+          const data = await checkRes.json();
+          setSaved(data.saved);
+        }
       } catch (err) {
-        console.error("Error fetching job:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
+    fetchData();
+  }, [id, userId]);
 
-    if (id) fetchJob();
-  }, [id]);
+  const handleToggleSaveJob = async () => {
+    if (!userId) {
+      alert("You must be logged in to save a job.");
+      navigate("/login");
+      return;
+    }
+
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const uid = parseInt(userId);
+      const rid = parseInt(id || "0");
+
+      if (!saved) {
+        const res = await fetch(`${API_URL}/savejob`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: uid, recruitmentId: rid }),
+        });
+        if (!res.ok) throw new Error("Error saving job");
+        setSaved(true);
+        setMessage("✅ Job saved successfully!");
+      } else {
+        const res = await fetch(
+          `${API_URL}/savejob/unsave?userId=${uid}&recruitmentId=${rid}`,
+          { method: "DELETE" }
+        );
+        if (!res.ok) throw new Error("Error removing saved job");
+        setSaved(false);
+        setMessage("🗑️ Job removed from saved list.");
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("❌ Something went wrong. Try again!");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage(null), 2500);
+    }
+  };
 
   if (loading) return <p className="text-center mt-5">Loading...</p>;
   if (!job) return <p className="text-center mt-5">Job not found</p>;
 
   return (
     <div>
-      {/* HERO */}
       <section
         className="section-hero overlay inner-page bg-image"
         style={{ backgroundImage: `url(${heroImg})` }}
         id="home-section"
       >
         <div className="container">
-          <div className="row">
-            <div className="col-md-7">
-              <h1 className="text-white font-weight-bold">{job.title}</h1>
-              <div className="custom-breadcrumbs">
-                <a href="/">Home</a> <span className="mx-2 slash">/</span>
-                <a href="/jobs">Jobs</a> <span className="mx-2 slash">/</span>
-                <span className="text-white"><strong>{job.title}</strong></span>
-              </div>
-            </div>
-          </div>
+          <h1 className="text-white font-weight-bold">{job.title}</h1>
         </div>
       </section>
 
-      {/* JOB DETAILS */}
       <section className="site-section">
         <div className="container">
           <div className="row align-items-center mb-5">
-            <div className="col-lg-8 mb-4 mb-lg-0">
-              <div className="d-flex align-items-center">
-                <div className="border p-2 d-inline-block mr-3 rounded">
-                  <img src="/images/job_logo_5.jpg" alt="Logo" />
-                </div>
-                <div>
-                  <h2>{job.title}</h2>
-                  <div>
-                    <span className="ml-0 mr-2 mb-2">
-                      <span className="icon-briefcase mr-2"></span>
-                      {job.companyName}
-                    </span>
-                    <span className="m-2">
-                      <span className="icon-room mr-2"></span>
-                      {job.categoryName}
-                    </span>
-                    <span className="m-2">
-                      <span className="icon-clock-o mr-2"></span>
-                      <span className="text-primary">
-                        {job.status === 1 ? "Open" : "Closed"}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <div className="col-lg-8">
+              <h2>{job.title}</h2>
+              <p>{job.companyName} - {job.categoryName}</p>
+              <p>Status: {job.status === 1 ? "Open" : "Closed"}</p>
             </div>
-
             <div className="col-lg-4">
-              <div className="row">
-                <div className="col-6">
-                  <button className="btn btn-block btn-light btn-md">
-                    <span className="icon-heart-o mr-2 text-danger"></span>
-                    Save Job
-                  </button>
-                </div>
-                <div className="col-6">
-                  <button
-                    className="btn btn-block btn-primary btn-md"
-                    onClick={() => navigate(`/apply-form/${id}`)}
-                  >Apply Now
-                  </button>
-                </div>
-              </div>
+              <button
+                className={`btn btn-block ${saved ? "btn-danger" : "btn-light"}`}
+                onClick={handleToggleSaveJob}
+                disabled={saving}
+              >
+                {saving ? "⏳..." : saved ? "Saved" : "Save Job"}
+              </button>
+              <button
+                className="btn btn-block btn-primary mt-2"
+                onClick={() => navigate(`/apply-form/${id}`)}
+              >
+                Apply Now
+              </button>
+              {message && <p className="text-center mt-2">{message}</p>}
             </div>
           </div>
-
-          {/* Bạn có thể thêm mô tả, yêu cầu từ backend sau này */}
         </div>
       </section>
     </div>

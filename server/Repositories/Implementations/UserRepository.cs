@@ -33,5 +33,12 @@ namespace server.Repositories.Implementations
                 .Include(u => u.SaveJobs)
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
+public async Task<Role?> GetRoleByNameAsync(string roleName)
+{
+    return await _context.Roles
+        .FirstOrDefaultAsync(r => r.RoleName == roleName);
+}
+
+
     }
 }

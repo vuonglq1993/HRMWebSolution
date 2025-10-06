@@ -52,5 +52,38 @@ namespace server.Services.Implementations
             await _repo.DeleteAsync(id);
             return true;
         }
+
+        public async Task<bool> CheckSavedAsync(int userId, int recruitmentId)
+        {
+            var list = await _repo.GetAllAsync();
+            return list.Any(s => s.UserId == userId && s.RecruitmentId == recruitmentId);
+        }
+
+        public async Task<bool> UnsaveAsync(int userId, int recruitmentId)
+        {
+            var ent = await _repo.GetByUserAndRecruitmentAsync(userId, recruitmentId);
+            if (ent == null) return false;
+            await _repo.DeleteAsync(ent.Id);
+            return true;
+        }
+public async Task<IEnumerable<SaveJobViewDto>> GetSavedJobsByUserAsync(int userId)
+{
+    var list = await _repo.GetAllAsync();
+
+    return list
+        .Where(s => s.UserId == userId)
+        .Select(s => new SaveJobViewDto
+        {
+            Id = s.Id,
+            UserId = s.UserId,
+            RecruitmentId = s.RecruitmentId,
+            JobTitle = s.Recruitment?.Title,
+            CompanyName = s.Recruitment?.Company?.NameCompany, // 👈 lấy từ Company
+            CategoryName = s.Recruitment?.Category?.Name        // hoặc CategoryName nếu là text
+        })
+        .ToList();
+}
+
+
     }
 }

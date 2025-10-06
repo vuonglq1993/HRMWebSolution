@@ -9,7 +9,7 @@ namespace server.DTOs
         public string? NameCompany { get; set; }
         public string? PhoneNumber { get; set; }
         public int Status { get; set; }
-        public int UserId { get; set; }
+        public int	 UserId { get; set; }
     }
 
     public class CompanyUpdateDto : CompanyCreateDto { public int Id { get; set; } }
